@@ -1,9 +1,9 @@
 package calculation
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
+	"math"
 )
 
 func Calc(expression string) (float64, error) {
@@ -17,11 +17,14 @@ func Calc(expression string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
+	if math.IsInf(result, 0) {
+		return 0, ErrDivisionByZero
+	}
 	return result, nil
 }
 
 func isValid(e string) (error) {
-	res := []rune(e)
+	res := []rune(strings.ReplaceAll(e, " ", ""))
 	//проверка на пустую строку
 	if len(res) == 0 {
         return ErrEmptyExpression
@@ -94,7 +97,6 @@ func infixToPostfix(expression string) []string {
 	var postfix []string
 	var stack []string
 
-	//поярдок значимости
 	precedence := map[string]int{
 		"+": 1,
 		"-": 1,
@@ -108,13 +110,12 @@ func infixToPostfix(expression string) []string {
 		if token == "(" {
 			stack = append(stack, token)
 		} else if token == ")" {
-			//пока не найдём открывающуюся скобку - добавляем в postfix символы.
 			for stack[len(stack)-1] != "(" {
 				postfix = append(postfix, stack[len(stack)-1])
 				stack = stack[:len(stack)-1]
 			}
 			stack = stack[:len(stack)-1]
-		} else if _, isOperator := precedence[token]; isOperator { //если оператор
+		} else if _, isOperator := precedence[token]; isOperator {
 			for len(stack) > 0 && precedence[stack[len(stack)-1]] >= precedence[token] {
 				postfix = append(postfix, stack[len(stack)-1])
 				stack = stack[:len(stack)-1]
@@ -141,7 +142,7 @@ func evaluatePostfix(postfix []string) (float64, error) {
 			stack = append(stack, num)
 		} else {
 			if len(stack) < 2 {
-				return 0, fmt.Errorf("invalid expression")
+				return 0, ErrInvalidExpression
 			}
 
 			num2 := stack[len(stack)-1]
@@ -162,7 +163,7 @@ func evaluatePostfix(postfix []string) (float64, error) {
 	}
 
 	if len(stack) != 1 {
-		return 0, fmt.Errorf("invalid expression")
+		return 0, ErrInvalidExpression
 	}
 
 	return stack[0], nil
