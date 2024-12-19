@@ -30,8 +30,8 @@ func isValid(e string) error {
 	if len(res) == 0 {
 		return ErrEmptyExpression
 	}
-	//Проверка на первый и последний символ не знаки операции
-	if res[0] == '+' || res[0] == '-' || res[0] == '*' || res[0] == '/' || res[len(res)-1] == '+' || res[len(res)-1] == '-' || res[len(res)-1] == '*' || res[len(res)-1] == '/' {
+	//Проверка первого и последнего символа на корректность
+	if res[0] == ')' || res[0] == '+' || res[0] == '-' || res[0] == '*' || res[0] == '/' || res[len(res)-1] == '+' || res[len(res)-1] == '-' || res[len(res)-1] == '*' || res[len(res)-1] == '/' || res[len(res) - 1] == '(' {
 		return ErrInvalidExpression
 	}
 	//Проверка, что первый символ либо цифра, либо `(`
