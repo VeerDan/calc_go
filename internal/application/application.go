@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"fmt"
-	"errors"
 	calculation "github.com/VeerDan/calc_go/pkg/calculation"
 )
 
@@ -41,17 +40,14 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, `"error": "Internal server error"`, http.StatusInternalServerError)
 		return
 	}
-
 	result, err := calculation.Calc(request.Expression)
 	if err != nil {
-		if errors.Is(err, calculation.ErrInvalidExpression) {
-			fmt.Fprintf(w, "err: %s", err.Error())
-		}
+		http.Error(w, fmt.Sprintf(`"error": "%s"`, err), http.StatusUnprocessableEntity )
 	} else {
-		fmt.Fprintf(w, "result: %f", result)
+		fmt.Fprintf(w, `"result": "%f"`, result)
 	}
 
 }
