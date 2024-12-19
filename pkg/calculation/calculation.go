@@ -1,9 +1,10 @@
 package calculation
 
 import (
+	"fmt"
+	"math"
 	"strconv"
 	"strings"
-	"math"
 )
 
 func Calc(expression string) (float64, error) {
@@ -23,14 +24,14 @@ func Calc(expression string) (float64, error) {
 	return result, nil
 }
 
-func isValid(e string) (error) {
+func isValid(e string) error {
 	res := []rune(strings.ReplaceAll(e, " ", ""))
 	//проверка на пустую строку
 	if len(res) == 0 {
-        return ErrEmptyExpression
-    }
+		return ErrEmptyExpression
+	}
 	//Проверка на первый и последний символ не знаки операции
-	if res[0] == '+' || res[0] == '-' || res[0] == '*' || res[0] == '/' || res[len(res) - 1] == '+' || res[len(res) - 1] == '-' || res[len(res) - 1] == '*' || res[len(res) - 1] == '/' {
+	if res[0] == '+' || res[0] == '-' || res[0] == '*' || res[0] == '/' || res[len(res)-1] == '+' || res[len(res)-1] == '-' || res[len(res)-1] == '*' || res[len(res)-1] == '/' {
 		return ErrInvalidExpression
 	}
 	//Проверка, что первый символ либо цифра, либо `(`
@@ -42,38 +43,38 @@ func isValid(e string) (error) {
 	//проверим правильность выражения посимвольно
 	for i, sym := range res {
 		//если знак операция - проверяем, что вокруг цифры
-		if  sym == '+' || sym == '-' || sym == '*' || sym == '/' {
-			if !(res[i - 1] == '1' || res[i - 1] == '2' || res[i - 1] == '3' || res[i - 1] == '4' || res[i - 1] == '5' || res[i - 1] == '6' || res[i - 1] == '7' || res[i - 1] == '8' || res[i - 1] == '9' || res[i - 1] == '0' || res[i + 1] == '1' || res[i + 1] == '2' || res[i + 1] == '3' || res[i + 1] == '4' || res[i + 1] == '5' || res[i + 1] == '6' || res[i + 1] == '7' || res[i + 1] == '8' || res[i + 1] == '9' || res[i + 1] == '0') {
+		if sym == '+' || sym == '-' || sym == '*' || sym == '/' {
+			if !(res[i-1] == '1' || res[i-1] == '2' || res[i-1] == '3' || res[i-1] == '4' || res[i-1] == '5' || res[i-1] == '6' || res[i-1] == '7' || res[i-1] == '8' || res[i-1] == '9' || res[i-1] == '0' || res[i-1] == ')' || res[i+1] == '1' || res[i+1] == '2' || res[i+1] == '3' || res[i+1] == '4' || res[i+1] == '5' || res[i+1] == '6' || res[i+1] == '7' || res[i+1] == '8' || res[i+1] == '9' || res[i+1] == '0' || res[i+1] == '(') {
 				return ErrInvalidExpression
 			}
 		} else if sym == '1' || sym == '2' || sym == '3' || sym == '4' || sym == '5' || sym == '6' || sym == '7' || sym == '8' || sym == '9' || sym == '0' {
-			if i + 1 != len(res) {
-				if !(res[i + 1] == '1' || res[i + 1] == '2' || res[i + 1] == '3' || res[i + 1] == '4' || res[i + 1] == '5' || res[i + 1] == '6' || res[i + 1] == '7' || res[i + 1] == '8' || res[i + 1] == '9' || res[i + 1] == '0' || res[i + 1] == '+' || res[i + 1] == '-' || res[i + 1] == '*' || res[i + 1] == '/' || res[i + 1] == ')') {
+			if i+1 != len(res) {
+				if !(res[i+1] == '1' || res[i+1] == '2' || res[i+1] == '3' || res[i+1] == '4' || res[i+1] == '5' || res[i+1] == '6' || res[i+1] == '7' || res[i+1] == '8' || res[i+1] == '9' || res[i+1] == '0' || res[i+1] == '+' || res[i+1] == '-' || res[i+1] == '*' || res[i+1] == '/' || res[i+1] == ')') {
 					//после цифры не может стоять `(`
-					if res[i + 1] == '(' {
+					if res[i+1] == '(' {
 						return ErrInvalidExpression
 					}
 					//в ином случае - посторонний символ
 					return ErrInvalidSymbol
 				}
 			}
-			if i - 1 != -1 {
-				if !(res[i - 1] == '1' || res[i - 1] == '2' || res[i - 1] == '3' || res[i - 1] == '4' || res[i - 1] == '5' || res[i - 1] == '6' || res[i - 1] == '7' || res[i - 1] == '8' || res[i - 1] == '9' || res[i - 1] == '0' || res[i - 1] == '+' || res[i - 1] == '-' || res[i - 1] == '*' || res[i - 1] == '/' || res[i - 1] == '(') {
-					if res[i - 1] == ')' {
+			if i-1 != -1 {
+				if !(res[i-1] == '1' || res[i-1] == '2' || res[i-1] == '3' || res[i-1] == '4' || res[i-1] == '5' || res[i-1] == '6' || res[i-1] == '7' || res[i-1] == '8' || res[i-1] == '9' || res[i-1] == '0' || res[i-1] == '+' || res[i-1] == '-' || res[i-1] == '*' || res[i-1] == '/' || res[i-1] == '(') {
+					if res[i-1] == ')' {
 						return ErrInvalidExpression
 					}
 					return ErrInvalidSymbol
-				} 
-			} 
+				}
+			}
 		} else if sym == '(' { //добавляем `(` в стэк проверки
 			stack = append(stack, sym)
 		} else if sym == ')' { //проверяем на наличие открывающих скобок
 			if stack == nil {
 				//нет открывающих скобок до закрывающих
 				return ErrInvalidExpression
-			} else if stack[len(stack) - 1] == '(' {
+			} else if stack[len(stack)-1] == '(' {
 				//если последний элемент открывающая скобка - убираем её из стэка
-				stack = stack[:len(stack) - 1]
+				stack = stack[:len(stack)-1]
 			} else {
 				return ErrInvalidExpression
 			}
@@ -96,6 +97,7 @@ func isValid(e string) (error) {
 func infixToPostfix(expression string) []string {
 	var postfix []string
 	var stack []string
+	var temp string
 
 	precedence := map[string]int{
 		"+": 1,
@@ -105,8 +107,7 @@ func infixToPostfix(expression string) []string {
 	}
 
 	tokens := strings.Split(expression, "")
-
-	for _, token := range tokens {
+	for i, token := range tokens {
 		if token == "(" {
 			stack = append(stack, token)
 		} else if token == ")" {
@@ -122,7 +123,19 @@ func infixToPostfix(expression string) []string {
 			}
 			stack = append(stack, token)
 		} else {
-			postfix = append(postfix, token)
+			if (i + 1) < len(tokens) {
+				if tokens[i + 1] == "1" || tokens[i + 1] == "2" || tokens[i + 1] == "3" || tokens[i + 1] == "4" || tokens[i + 1] == "5" || tokens[i + 1] == "6" || tokens[i + 1] == "7" || tokens[i + 1] == "8" || tokens[i + 1] == "9" || tokens[i + 1] == "0" {
+					temp += token
+				} else {
+					temp += token
+					postfix = append(postfix, temp)
+					temp = ""
+				}
+			} else {
+				temp += token
+				postfix = append(postfix, temp)
+				temp = ""
+			}
 		}
 	}
 
@@ -130,18 +143,17 @@ func infixToPostfix(expression string) []string {
 		postfix = append(postfix, stack[len(stack)-1])
 		stack = stack[:len(stack)-1]
 	}
-
 	return postfix
 }
 
 func evaluatePostfix(postfix []string) (float64, error) {
 	var stack []float64
-
 	for _, token := range postfix {
 		if num, err := strconv.ParseFloat(token, 64); err == nil {
 			stack = append(stack, num)
 		} else {
 			if len(stack) < 2 {
+				fmt.Println("1")
 				return 0, ErrInvalidExpression
 			}
 
