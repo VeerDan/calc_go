@@ -8,63 +8,85 @@ import (
 
 func Calc(expression string) (float64, error) {
 	expression = strings.ReplaceAll(expression, " ", "")
-	if !isValid(expression) {
-		return 0, fmt.Errorf("invalid expression")
+	err := isValid(expression)
+	if err != nil {
+		return 0, err
 	}
 	postfix := infixToPostfix(expression)
-
 	result, err := evaluatePostfix(postfix)
 	if err != nil {
 		return 0, err
 	}
-
 	return result, nil
 }
 
-func isValid(e string) (bool) {
+func isValid(e string) (error) {
 	res := []rune(e)
+	//проверка на пустую строку
 	if len(res) == 0 {
-        return false
+        return ErrEmptyExpression
     }
-	if res[0] == '+' || res[0] == '-' || res[0] == '*' || res[0] == '/' {
-		return false
+	//Проверка на первый и последний символ не знаки операции
+	if res[0] == '+' || res[0] == '-' || res[0] == '*' || res[0] == '/' || res[len(res) - 1] == '+' || res[len(res) - 1] == '-' || res[len(res) - 1] == '*' || res[len(res) - 1] == '/' {
+		return ErrInvalidExpression
 	}
+	//Проверка, что первый символ либо цифра, либо `(`
+	if !(res[0] == '1' || res[0] == '2' || res[0] == '3' || res[0] == '4' || res[0] == '5' || res[0] == '6' || res[0] == '7' || res[0] == '8' || res[0] == '9' || res[0] == '0' || res[0] == '(') {
+		return ErrInvalidSymbol
+	}
+	//стэк для `(` и `)`
 	var stack []rune
+	//проверим правильность выражения посимвольно
 	for i, sym := range res {
+		//если знак операция - проверяем, что вокруг цифры
 		if  sym == '+' || sym == '-' || sym == '*' || sym == '/' {
-			continue
+			if !(res[i - 1] == '1' || res[i - 1] == '2' || res[i - 1] == '3' || res[i - 1] == '4' || res[i - 1] == '5' || res[i - 1] == '6' || res[i - 1] == '7' || res[i - 1] == '8' || res[i - 1] == '9' || res[i - 1] == '0' || res[i + 1] == '1' || res[i + 1] == '2' || res[i + 1] == '3' || res[i + 1] == '4' || res[i + 1] == '5' || res[i + 1] == '6' || res[i + 1] == '7' || res[i + 1] == '8' || res[i + 1] == '9' || res[i + 1] == '0') {
+				return ErrInvalidExpression
+			}
 		} else if sym == '1' || sym == '2' || sym == '3' || sym == '4' || sym == '5' || sym == '6' || sym == '7' || sym == '8' || sym == '9' || sym == '0' {
 			if i + 1 != len(res) {
 				if !(res[i + 1] == '1' || res[i + 1] == '2' || res[i + 1] == '3' || res[i + 1] == '4' || res[i + 1] == '5' || res[i + 1] == '6' || res[i + 1] == '7' || res[i + 1] == '8' || res[i + 1] == '9' || res[i + 1] == '0' || res[i + 1] == '+' || res[i + 1] == '-' || res[i + 1] == '*' || res[i + 1] == '/' || res[i + 1] == ')') {
-					return false
+					//после цифры не может стоять `(`
+					if res[i + 1] == '(' {
+						return ErrInvalidExpression
+					}
+					//в ином случае - посторонний символ
+					return ErrInvalidSymbol
 				}
 			}
 			if i - 1 != -1 {
 				if !(res[i - 1] == '1' || res[i - 1] == '2' || res[i - 1] == '3' || res[i - 1] == '4' || res[i - 1] == '5' || res[i - 1] == '6' || res[i - 1] == '7' || res[i - 1] == '8' || res[i - 1] == '9' || res[i - 1] == '0' || res[i - 1] == '+' || res[i - 1] == '-' || res[i - 1] == '*' || res[i - 1] == '/' || res[i - 1] == '(') {
-					return false
+					if res[i - 1] == ')' {
+						return ErrInvalidExpression
+					}
+					return ErrInvalidSymbol
 				} 
 			} 
-		} else if sym == '(' {
+		} else if sym == '(' { //добавляем `(` в стэк проверки
 			stack = append(stack, sym)
-		} else if sym == ')' {
+		} else if sym == ')' { //проверяем на наличие открывающих скобок
 			if stack == nil {
-				stack = append(stack, sym)
+				//нет открывающих скобок до закрывающих
+				return ErrInvalidExpression
 			} else if stack[len(stack) - 1] == '(' {
+				//если последний элемент открывающая скобка - убираем её из стэка
 				stack = stack[:len(stack) - 1]
 			} else {
-				return false
+				return ErrInvalidExpression
 			}
 		} else {
-			return false
+			//посторонний символ
+			return ErrInvalidSymbol
 		}
 	}
 
 	if stack == nil {
-		return true
+		//скобок не было, ошибок нет
+		return nil
 	} else if len(stack) == 0 {
-		return true
+		return nil
 	} else {
-		return false
+		return ErrInvalidExpression
 	}
 }
 
@@ -72,6 +94,7 @@ func infixToPostfix(expression string) []string {
 	var postfix []string
 	var stack []string
 
+	//поярдок значимости
 	precedence := map[string]int{
 		"+": 1,
 		"-": 1,
@@ -85,12 +108,13 @@ func infixToPostfix(expression string) []string {
 		if token == "(" {
 			stack = append(stack, token)
 		} else if token == ")" {
+			//пока не найдём открывающуюся скобку - добавляем в postfix символы.
 			for stack[len(stack)-1] != "(" {
 				postfix = append(postfix, stack[len(stack)-1])
 				stack = stack[:len(stack)-1]
 			}
 			stack = stack[:len(stack)-1]
-		} else if _, isOperator := precedence[token]; isOperator {
+		} else if _, isOperator := precedence[token]; isOperator { //если оператор
 			for len(stack) > 0 && precedence[stack[len(stack)-1]] >= precedence[token] {
 				postfix = append(postfix, stack[len(stack)-1])
 				stack = stack[:len(stack)-1]
