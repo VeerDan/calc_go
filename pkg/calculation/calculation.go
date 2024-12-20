@@ -1,7 +1,6 @@
 package calculation
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -31,25 +30,28 @@ func isValid(e string) error {
 		return ErrEmptyExpression
 	}
 	//Проверка первого и последнего символа на корректность
-	if res[0] == ')' || res[0] == '+' || res[0] == '-' || res[0] == '*' || res[0] == '/' || res[len(res)-1] == '+' || res[len(res)-1] == '-' || res[len(res)-1] == '*' || res[len(res)-1] == '/' || res[len(res) - 1] == '(' {
+	if res[0] == '.' || res[len(res) - 1] == '.' || res[0] == ')' || res[0] == '+' || res[0] == '-' || res[0] == '*' || res[0] == '/' || res[len(res)-1] == '+' || res[len(res)-1] == '-' || res[len(res)-1] == '*' || res[len(res)-1] == '/' || res[len(res) - 1] == '(' {
 		return ErrInvalidExpression
 	}
 	//Проверка, что первый символ либо цифра, либо `(`
 	if !(res[0] == '1' || res[0] == '2' || res[0] == '3' || res[0] == '4' || res[0] == '5' || res[0] == '6' || res[0] == '7' || res[0] == '8' || res[0] == '9' || res[0] == '0' || res[0] == '(') {
+		if res[0] == '.' || res[0] == ')' {
+			return ErrInvalidExpression
+		}
 		return ErrInvalidSymbol
 	}
 	//стэк для `(` и `)`
 	var stack []rune
 	//проверим правильность выражения посимвольно
 	for i, sym := range res {
-		//если знак операция - проверяем, что вокруг цифры
+		//если знак операция - проверяем, что вокруг цифры или скобки
 		if sym == '+' || sym == '-' || sym == '*' || sym == '/' {
 			if !(res[i-1] == '1' || res[i-1] == '2' || res[i-1] == '3' || res[i-1] == '4' || res[i-1] == '5' || res[i-1] == '6' || res[i-1] == '7' || res[i-1] == '8' || res[i-1] == '9' || res[i-1] == '0' || res[i-1] == ')' || res[i+1] == '1' || res[i+1] == '2' || res[i+1] == '3' || res[i+1] == '4' || res[i+1] == '5' || res[i+1] == '6' || res[i+1] == '7' || res[i+1] == '8' || res[i+1] == '9' || res[i+1] == '0' || res[i+1] == '(') {
 				return ErrInvalidExpression
 			}
 		} else if sym == '1' || sym == '2' || sym == '3' || sym == '4' || sym == '5' || sym == '6' || sym == '7' || sym == '8' || sym == '9' || sym == '0' {
 			if i+1 != len(res) {
-				if !(res[i+1] == '1' || res[i+1] == '2' || res[i+1] == '3' || res[i+1] == '4' || res[i+1] == '5' || res[i+1] == '6' || res[i+1] == '7' || res[i+1] == '8' || res[i+1] == '9' || res[i+1] == '0' || res[i+1] == '+' || res[i+1] == '-' || res[i+1] == '*' || res[i+1] == '/' || res[i+1] == ')') {
+				if !(res[i + 1] == '.' || res[i+1] == '1' || res[i+1] == '2' || res[i+1] == '3' || res[i+1] == '4' || res[i+1] == '5' || res[i+1] == '6' || res[i+1] == '7' || res[i+1] == '8' || res[i+1] == '9' || res[i+1] == '0' || res[i+1] == '+' || res[i+1] == '-' || res[i+1] == '*' || res[i+1] == '/' || res[i+1] == ')') {
 					//после цифры не может стоять `(`
 					if res[i+1] == '(' {
 						return ErrInvalidExpression
@@ -59,7 +61,7 @@ func isValid(e string) error {
 				}
 			}
 			if i-1 != -1 {
-				if !(res[i-1] == '1' || res[i-1] == '2' || res[i-1] == '3' || res[i-1] == '4' || res[i-1] == '5' || res[i-1] == '6' || res[i-1] == '7' || res[i-1] == '8' || res[i-1] == '9' || res[i-1] == '0' || res[i-1] == '+' || res[i-1] == '-' || res[i-1] == '*' || res[i-1] == '/' || res[i-1] == '(') {
+				if !(res[i-1] == '.' || res[i-1] == '1' || res[i-1] == '2' || res[i-1] == '3' || res[i-1] == '4' || res[i-1] == '5' || res[i-1] == '6' || res[i-1] == '7' || res[i-1] == '8' || res[i-1] == '9' || res[i-1] == '0' || res[i-1] == '+' || res[i-1] == '-' || res[i-1] == '*' || res[i-1] == '/' || res[i-1] == '(') {
 					if res[i-1] == ')' {
 						return ErrInvalidExpression
 					}
@@ -124,7 +126,7 @@ func infixToPostfix(expression string) []string {
 			stack = append(stack, token)
 		} else {
 			if (i + 1) < len(tokens) {
-				if tokens[i + 1] == "1" || tokens[i + 1] == "2" || tokens[i + 1] == "3" || tokens[i + 1] == "4" || tokens[i + 1] == "5" || tokens[i + 1] == "6" || tokens[i + 1] == "7" || tokens[i + 1] == "8" || tokens[i + 1] == "9" || tokens[i + 1] == "0" {
+				if tokens[i + 1] == "1" || tokens[i + 1] == "2" || tokens[i + 1] == "3" || tokens[i + 1] == "4" || tokens[i + 1] == "5" || tokens[i + 1] == "6" || tokens[i + 1] == "7" || tokens[i + 1] == "8" || tokens[i + 1] == "9" || tokens[i + 1] == "0" || tokens[i + 1] == "." {
 					temp += token
 				} else {
 					temp += token
@@ -153,7 +155,6 @@ func evaluatePostfix(postfix []string) (float64, error) {
 			stack = append(stack, num)
 		} else {
 			if len(stack) < 2 {
-				fmt.Println("1")
 				return 0, ErrInvalidExpression
 			}
 
