@@ -68,6 +68,13 @@ func isValid(e string) error {
 					return ErrInvalidSymbol
 				}
 			}
+		} else if sym == '.' {
+			if !(res[i + 1] == '1' || res[i + 1] == '2' || res[i + 1] == '3' || res[i + 1] == '4' || res[i + 1] == '5' || res[i + 1] == '6' || res[i + 1] == '7' || res[i + 1] == '8' || res[i + 1] == '9' || res[i + 1] == '0' || res[i - 1] == '1' || res[i - 1] == '2' || res[i - 1] == '3' || res[i - 1] == '4' || res[i - 1] == '5' || res[i - 1] == '6' || res[i - 1] == '7' || res[i - 1] == '8' || res[i - 1] == '9' || res[i - 1] == '0') {
+				if (res[i + 1] == '(' || res[i + 1] == ')' || res[i + 1] == '+' || res[i + 1] == '-' || res[i + 1] == '*' || res[i + 1] == '/') && (res[i - 1] == '(' || res[i - 1] == ')' || res[i - 1] == '+' || res[i - 1] == '-' || res[i - 1] == '*' || res[i - 1] == '/') {
+					return ErrInvalidExpression
+				}
+				return ErrInvalidSymbol
+			}
 		} else if sym == '(' { //добавляем `(` в стэк проверки
 			stack = append(stack, sym)
 		} else if sym == ')' { //проверяем на наличие открывающих скобок
