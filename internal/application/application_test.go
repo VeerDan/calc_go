@@ -1,110 +1,191 @@
 package application
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"bytes"
-	"encoding/json"
+	"fmt"
+	"io"
 )
 
-type Response struct {
-	Result float64 `json:"result"`
-}
 
 func TestRequestHandlerSuccessCase(t *testing.T) {
 	testCasesSuccess := []struct {
 		name string
-		body []byte
-		expected float64
+		requestBody Request
+		expectedCode int
+		expectedResult string
 	}{
 		{
 			name: `without devision and breaks, expected result is int`,
-			body: []byte(`curl --location 'localhost/api/v1/calculate'
-			--header 'Content-Type: application/json'
-			--data '{
-			  "expression": "2+2*2-1"
-			}'`),
-			expected: float64(5),
+			requestBody: Request{
+				Expression: "2+2*2-1",
+			},
+			expectedCode: 200,
+			expectedResult: fmt.Sprintf(`{"result":"%v"}`, float64(5)),
 		},
 		{
 			name: `without devision, expected result is int`,
-			body: []byte(`curl --location 'localhost/api/v1/calculate'
-			--header 'Content-Type: application/json'
-			--data '{
-			  "expression": "(2+2-1)*2"
-			}'`),
-			expected: float64(6),
+			requestBody: Request{
+				Expression: "(2+2-1)*2",
+			},
+			expectedCode: 200,
+			expectedResult: fmt.Sprintf(`{"result":"%v"}`, float64(6)),
 		},
 		{
 			name: `devision without breaks, expected result is float`,
-			body: []byte(`curl --location 'localhost/api/v1/calculate'
-			--header 'Content-Type: application/json'
-			--data '{
-			  "expression": "1/2*3"
-			}'`),
-			expected: float64(1)/2*3,
+			requestBody: Request{
+				Expression: "1/2*3",
+			},
+			expectedCode: 200,
+			expectedResult: fmt.Sprintf(`{"result":"%v"}`, float64(1)/2*3),
 		},
 		{
 			name: `devision with breaks, expected result is float`,
-			body: []byte(`'{"expression": "(1+2)/4"}'`),
-			expected: (1 + 2) / 4,
+			requestBody: Request{
+				Expression: "(1+2)/4",
+			},
+			expectedCode: 200,
+			expectedResult: fmt.Sprintf(`{"result":"%v"}`, float64(1 + 2) / 4),
 		}, 
 	}
 	for _, testCase := range testCasesSuccess {
 		t.Run(testCase.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPost, "/api/v1/calculate", bytes.NewReader(testCase.body))
+			body_json := fmt.Sprintf(`{"expression":"%s"}`, testCase.requestBody.Expression)
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/calculate", bytes.NewReader([]byte(body_json)))
 			w := httptest.NewRecorder()
 			CalcHandler(w, req)
 			res := w.Result()
 			defer res.Body.Close()
 			if res.StatusCode != 200 {
-				t.Fatalf("expected code: 200 in case\n %s\n, got: %d", string(testCase.body), res.StatusCode)
+				t.Fatalf(`expected code: 200 in case\n "%s"\n, got: %d`, string(testCase.requestBody.Expression), res.StatusCode)
 			}
-			var p Response
-			err := json.NewDecoder(res.Body).Decode(&p)
+			data, err := io.ReadAll(res.Body)
 			if err != nil {
-				t.Fatalf("Encoding error")
+				t.Errorf("Error: %v", err)
 			}
-			if p.Result != testCase.expected {
-				t.Fatalf("%f should be equal %f", p.Result, testCase.expected)
+			if string(data) != testCase.expectedResult {
+				t.Errorf("expected: %s, got: %s", testCase.expectedResult, string(data))
 			}
 		})
 	}
-	// expected := "Hello John"
-	// req := httptest.NewRequest(http.MethodGet, "/api/v1/calculate", bytes.NewReader(body))
-	// w := httptest.NewRecorder()
-	// RequestHandler(w, req)
-	// res := w.Result()
-	// defer res.Body.Close()
-	// data, err := io.ReadAll(res.Body)
-	// if err != nil {
-	// 	t.Errorf("Error: %v", err)
-	// }
-
-	// if string(data) != expected {
-	// 	t.Errorf("Expected Hello John but got %v", string(data))
-	// }
-
-	// if res.StatusCode != http.StatusOK {
-	// 	t.Errorf("wrong status code")
-	// }
 }
 
-func TestRequestHandlerBadRequestCase(t *testing.T) {
-
-
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/calculate", nil)
-	w := httptest.NewRecorder()
-	CalcHandler(w, req)
-	res := w.Result()
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusBadRequest {
-		t.Errorf("wrong status code")
+func TestRequestError(t *testing.T) {
+	testCasesSuccess := []struct {
+		name string
+		requestBody Request
+		expectedCode int
+		expectedResult string
+	}{
+		{
+			name: "InvalidExpression, test1",
+			requestBody: Request {
+				Expression: "1+2)",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"invalid expression"}`, "\n"),
+		},
+		{
+			name: "InvalidExpression, test2",
+			requestBody: Request {
+				Expression: "-(1+2)",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"invalid expression"}`, "\n"),
+		},
+		{
+			name: "InvalidExpression, test3",
+			requestBody: Request {
+				Expression: "1.+2",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"invalid expression"}`, "\n"),
+		},
+		{
+			name: "InvalidSymbol, test1",
+			requestBody: Request {
+				Expression: "(1+2)*a",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"invalid symbols"}`, "\n"),
+		}, 
+		{
+			name: "InvalidSymbol, test2",
+			requestBody: Request {
+				Expression: "1+2,0",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"invalid symbols"}`, "\n"),
+		},
+		{
+			name: "DivisionByZero, test1",
+			requestBody: Request {
+				Expression: "100/0",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"division by zero"}`, "\n"),
+		},
+		{
+			name: "DivisionByZero, test2",
+			requestBody: Request {
+				Expression: "100/(1500-1500)",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"division by zero"}`, "\n"),
+		},
+		{
+			name: "DivisionByZero, test3",
+			requestBody: Request {
+				Expression: "100/0",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"division by zero"}`, "\n"),
+		},
+		{
+			name: "EmptyExpression, test1",
+			requestBody: Request {
+				Expression: "",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"empty expression"}`, "\n"),
+		},
+		{
+			name: "EmptyExpression, test2",
+			requestBody: Request {
+				Expression: "",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"empty expression"}`, "\n"),
+		},
+		{
+			name: "EmptyExpression, test3",
+			requestBody: Request {
+				Expression: "   ",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"empty expression"}`, "\n"),
+		},
+	}
+	for _, testCase := range testCasesSuccess {
+		t.Run(testCase.name, func(t *testing.T) {
+			body_json := fmt.Sprintf(`{"expression":"%s"}`, testCase.requestBody.Expression)
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/calculate", bytes.NewReader([]byte(body_json)))
+			w := httptest.NewRecorder()
+			CalcHandler(w, req)
+			res := w.Result()
+			defer res.Body.Close()
+			if res.StatusCode != 422 {
+				t.Fatalf(`expected code: 422 in case\n "%s"\n, got: %d`, string(testCase.requestBody.Expression), res.StatusCode)
+			}
+			data, err := io.ReadAll(res.Body)
+			if err != nil {
+				t.Errorf("Error: %v", err)
+			}
+			if string(data) != testCase.expectedResult {
+				t.Errorf("expected: %s, got: %s", testCase.expectedResult, string(data))
+			}
+		})
 	}
 }
-
-func TestRequestInvalidExpression(t *testing.T) {
-
-} 

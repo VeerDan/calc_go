@@ -1,15 +1,13 @@
 package application
 
 import (
-	"bufio"
 	"encoding/json"
-	"log"
 	"net/http"
 	"os"
-	"strings"
 	"fmt"
-	"errors"
 	calculation "github.com/VeerDan/calc_go/pkg/calculation"
+	"log/slog"
+	"time"
 )
 
 type Config struct {
@@ -24,6 +22,7 @@ func ConfigFromEnv() *Config {
 	}
 	return config
 }
+
 type Application struct {
 	config *Config
 }
@@ -34,37 +33,22 @@ func New() *Application {
 	}
 }
 
-// Функция запуска приложения
-// тут будем читать введенную строку и после нажатия ENTER писать результат работы программы на экране
-// если пользователь ввел exit - то останаваливаем приложение
-func (a *Application) Run() error {
-	for {
-		// читаем выражение для вычисления из командной строки
-		log.Println("input expression")
-		reader := bufio.NewReader(os.Stdin)
-		text, err := reader.ReadString('\n')
-		if err != nil {
-			log.Println("failed to read expression from console")
-		}
-		// убираем пробелы, чтобы оставить только вычислемое выражение
-		text = strings.TrimSpace(text)
-		// выходим, если ввели команду "exit"
-		if text == "exit" {
-			log.Println("aplication was successfully closed")
-			return nil
-		}
-		//вычисляем выражение
-		result, err := calculation.Calc(text)
-		if err != nil {
-			log.Println(text, " calculation failed with error: ", err)
-		} else {
-			log.Println(text, "=", result)
-		}
-	}
+type Response struct {
+	Result float64 `json:"result"`
 }
 
 type Request struct {
 	Expression string `json:"expression"`
+}
+
+func TimeMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		t := time.Now()
+		elapsed := t.Sub(start)
+		slog.Info(fmt.Sprintf("Время ответа сервера: %v", elapsed))
+	})
 }
 
 func CalcHandler(w http.ResponseWriter, r *http.Request) {
@@ -72,22 +56,21 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		slog.Error(fmt.Sprintf("error: Internal server error; status_code: %d", 500))
+		http.Error(w, `{"error":"Internal server error"}`, http.StatusInternalServerError)
 		return
 	}
-
 	result, err := calculation.Calc(request.Expression)
 	if err != nil {
-		if errors.Is(err, calculation.ErrInvalidExpression) {
-			fmt.Fprintf(w, "err: %s", err.Error())
-		}
+		slog.Error(fmt.Sprintf("error: %s; status_code: %d", err, 422))
+		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err), http.StatusUnprocessableEntity )
 	} else {
-		fmt.Fprintf(w, "result: %f", result)
+		slog.Info(fmt.Sprintf("result: %v; status_code: %d", result, 200))
+		fmt.Fprintf(w, `{"result":"%v"}`, result)
 	}
-
 }
 
 func (a *Application) RunServer() error {
-	http.HandleFunc("/", CalcHandler)
+	http.HandleFunc("/", TimeMiddleware(CalcHandler))
 	return http.ListenAndServe(":"+a.config.Addr, nil)
 }
