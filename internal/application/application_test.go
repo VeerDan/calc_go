@@ -23,7 +23,7 @@ func TestRequestHandlerSuccessCase(t *testing.T) {
 				Expression: "2+2*2-1",
 			},
 			expectedCode: 200,
-			expectedResult: fmt.Sprintf(`{"result":"%f"}`, float64(5)),
+			expectedResult: fmt.Sprintf(`{"result":"%v"}`, float64(5)),
 		},
 		{
 			name: `without devision, expected result is int`,
@@ -31,7 +31,7 @@ func TestRequestHandlerSuccessCase(t *testing.T) {
 				Expression: "(2+2-1)*2",
 			},
 			expectedCode: 200,
-			expectedResult: fmt.Sprintf(`{"result":"%f"}`, float64(6)),
+			expectedResult: fmt.Sprintf(`{"result":"%v"}`, float64(6)),
 		},
 		{
 			name: `devision without breaks, expected result is float`,
@@ -39,7 +39,7 @@ func TestRequestHandlerSuccessCase(t *testing.T) {
 				Expression: "1/2*3",
 			},
 			expectedCode: 200,
-			expectedResult: fmt.Sprintf(`{"result":"%f"}`, float64(1)/2*3),
+			expectedResult: fmt.Sprintf(`{"result":"%v"}`, float64(1)/2*3),
 		},
 		{
 			name: `devision with breaks, expected result is float`,
@@ -47,7 +47,7 @@ func TestRequestHandlerSuccessCase(t *testing.T) {
 				Expression: "(1+2)/4",
 			},
 			expectedCode: 200,
-			expectedResult: fmt.Sprintf(`{"result":"%f"}`, float64(1 + 2) / 4),
+			expectedResult: fmt.Sprintf(`{"result":"%v"}`, float64(1 + 2) / 4),
 		}, 
 	}
 	for _, testCase := range testCasesSuccess {

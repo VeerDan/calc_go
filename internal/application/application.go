@@ -65,8 +65,8 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Error(fmt.Sprintf("error: %s; status_code: %d", err, 422))
 		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err), http.StatusUnprocessableEntity )
 	} else {
-		slog.Info(fmt.Sprintf("result: %f; status_code: %d", result, 200))
-		fmt.Fprintf(w, `{"result":"%f"}`, result)
+		slog.Info(fmt.Sprintf("result: %v; status_code: %d", result, 200))
+		fmt.Fprintf(w, `{"result":"%v"}`, result)
 	}
 }
 
