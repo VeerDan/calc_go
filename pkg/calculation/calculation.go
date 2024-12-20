@@ -40,6 +40,11 @@ func isValid(e string) error {
 		}
 		return ErrInvalidSymbol
 	}
+	for _, sym := range(res) {
+		if !(sym == '1' || sym == '2' || sym == '3' || sym == '4' || sym == '5' || sym == '6' || sym == '7' || sym == '8' || sym == '9' || sym == '0' || sym == '(' || sym == ')' || sym == '.' || sym == '+' || sym == '*' || sym == '/' || sym == '-') {
+			return ErrInvalidSymbol
+		}
+	}
 	//стэк для `(` и `)`
 	var stack []rune
 	//проверим правильность выражения посимвольно
@@ -52,28 +57,17 @@ func isValid(e string) error {
 		} else if sym == '1' || sym == '2' || sym == '3' || sym == '4' || sym == '5' || sym == '6' || sym == '7' || sym == '8' || sym == '9' || sym == '0' {
 			if i+1 != len(res) {
 				if !(res[i + 1] == '.' || res[i+1] == '1' || res[i+1] == '2' || res[i+1] == '3' || res[i+1] == '4' || res[i+1] == '5' || res[i+1] == '6' || res[i+1] == '7' || res[i+1] == '8' || res[i+1] == '9' || res[i+1] == '0' || res[i+1] == '+' || res[i+1] == '-' || res[i+1] == '*' || res[i+1] == '/' || res[i+1] == ')') {
-					//после цифры не может стоять `(`
-					if res[i+1] == '(' {
-						return ErrInvalidExpression
-					}
-					//в ином случае - посторонний символ
-					return ErrInvalidSymbol
+					return ErrInvalidExpression
 				}
 			}
 			if i-1 != -1 {
 				if !(res[i-1] == '.' || res[i-1] == '1' || res[i-1] == '2' || res[i-1] == '3' || res[i-1] == '4' || res[i-1] == '5' || res[i-1] == '6' || res[i-1] == '7' || res[i-1] == '8' || res[i-1] == '9' || res[i-1] == '0' || res[i-1] == '+' || res[i-1] == '-' || res[i-1] == '*' || res[i-1] == '/' || res[i-1] == '(') {
-					if res[i-1] == ')' {
-						return ErrInvalidExpression
-					}
-					return ErrInvalidSymbol
+					return ErrInvalidExpression
 				}
 			}
 		} else if sym == '.' {
-			if !(res[i + 1] == '1' || res[i + 1] == '2' || res[i + 1] == '3' || res[i + 1] == '4' || res[i + 1] == '5' || res[i + 1] == '6' || res[i + 1] == '7' || res[i + 1] == '8' || res[i + 1] == '9' || res[i + 1] == '0' || res[i - 1] == '1' || res[i - 1] == '2' || res[i - 1] == '3' || res[i - 1] == '4' || res[i - 1] == '5' || res[i - 1] == '6' || res[i - 1] == '7' || res[i - 1] == '8' || res[i - 1] == '9' || res[i - 1] == '0') {
-				if (res[i + 1] == '(' || res[i + 1] == ')' || res[i + 1] == '+' || res[i + 1] == '-' || res[i + 1] == '*' || res[i + 1] == '/') && (res[i - 1] == '(' || res[i - 1] == ')' || res[i - 1] == '+' || res[i - 1] == '-' || res[i - 1] == '*' || res[i - 1] == '/') {
-					return ErrInvalidExpression
-				}
-				return ErrInvalidSymbol
+			if !((res[i + 1] == '1' || res[i + 1] == '2' || res[i + 1] == '3' || res[i + 1] == '4' || res[i + 1] == '5' || res[i + 1] == '6' || res[i + 1] == '7' || res[i + 1] == '8' || res[i + 1] == '9' || res[i + 1] == '0') && (res[i - 1] == '1' || res[i - 1] == '2' || res[i - 1] == '3' || res[i - 1] == '4' || res[i - 1] == '5' || res[i - 1] == '6' || res[i - 1] == '7' || res[i - 1] == '8' || res[i - 1] == '9' || res[i - 1] == '0')) {
+				return ErrInvalidExpression
 			}
 		} else if sym == '(' { //добавляем `(` в стэк проверки
 			stack = append(stack, sym)
@@ -87,10 +81,7 @@ func isValid(e string) error {
 			} else {
 				return ErrInvalidExpression
 			}
-		} else {
-			//посторонний символ
-			return ErrInvalidSymbol
-		}
+		} else {}
 	}
 
 	if stack == nil {

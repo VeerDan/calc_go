@@ -59,7 +59,7 @@ func TestRequestHandlerSuccessCase(t *testing.T) {
 			res := w.Result()
 			defer res.Body.Close()
 			if res.StatusCode != 200 {
-				t.Fatalf("expected code: 200 in case\n %s\n, got: %d", string(testCase.requestBody.Expression), res.StatusCode)
+				t.Fatalf(`expected code: 200 in case\n "%s"\n, got: %d`, string(testCase.requestBody.Expression), res.StatusCode)
 			}
 			data, err := io.ReadAll(res.Body)
 			if err != nil {
@@ -72,14 +72,101 @@ func TestRequestHandlerSuccessCase(t *testing.T) {
 	}
 }
 
-func TestRequestHandlerBadRequestCase(t *testing.T) {
+func TestRequestError(t *testing.T) {
 	testCasesSuccess := []struct {
 		name string
 		requestBody Request
 		expectedCode int
 		expectedResult string
 	}{
-		
+		{
+			name: "InvalidExpression, test1",
+			requestBody: Request {
+				Expression: "1+2)",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"invalid expression"}`, "\n"),
+		},
+		{
+			name: "InvalidExpression, test2",
+			requestBody: Request {
+				Expression: "-(1+2)",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"invalid expression"}`, "\n"),
+		},
+		{
+			name: "InvalidExpression, test3",
+			requestBody: Request {
+				Expression: "1.+2",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"invalid expression"}`, "\n"),
+		},
+		{
+			name: "InvalidSymbol, test1",
+			requestBody: Request {
+				Expression: "(1+2)*a",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"invalid symbols"}`, "\n"),
+		}, 
+		{
+			name: "InvalidSymbol, test2",
+			requestBody: Request {
+				Expression: "1+2,0",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"invalid symbols"}`, "\n"),
+		},
+		{
+			name: "DivisionByZero, test1",
+			requestBody: Request {
+				Expression: "100/0",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"division by zero"}`, "\n"),
+		},
+		{
+			name: "DivisionByZero, test2",
+			requestBody: Request {
+				Expression: "100/(1500-1500)",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"division by zero"}`, "\n"),
+		},
+		{
+			name: "DivisionByZero, test3",
+			requestBody: Request {
+				Expression: "100/0",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"division by zero"}`, "\n"),
+		},
+		{
+			name: "EmptyExpression, test1",
+			requestBody: Request {
+				Expression: "",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"empty expression"}`, "\n"),
+		},
+		{
+			name: "EmptyExpression, test2",
+			requestBody: Request {
+				Expression: "",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"empty expression"}`, "\n"),
+		},
+		{
+			name: "EmptyExpression, test3",
+			requestBody: Request {
+				Expression: "   ",
+			},
+			expectedCode: 422,
+			expectedResult: fmt.Sprint(`{"error":"empty expression"}`, "\n"),
+		},
 	}
 	for _, testCase := range testCasesSuccess {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -89,18 +176,16 @@ func TestRequestHandlerBadRequestCase(t *testing.T) {
 			CalcHandler(w, req)
 			res := w.Result()
 			defer res.Body.Close()
-			if res.StatusCode != 200 {
-				t.Fatalf("expected code: 200 in case\n %s\n, got: %d", string(testCase.requestBody.Expression), res.StatusCode)
+			if res.StatusCode != 422 {
+				t.Fatalf(`expected code: 422 in case\n "%s"\n, got: %d`, string(testCase.requestBody.Expression), res.StatusCode)
 			}
-			//data, err := io.ReadAll(res.Body)
-			//if err != nil {
-			//	t.Errorf("Error: %v", err)
-			//}
-			
+			data, err := io.ReadAll(res.Body)
+			if err != nil {
+				t.Errorf("Error: %v", err)
+			}
+			if string(data) != testCase.expectedResult {
+				t.Errorf("expected: %s, got: %s", testCase.expectedResult, string(data))
+			}
 		})
 	}
 }
-
-func TestRequestInvalidExpression(t *testing.T) {
-
-} 
