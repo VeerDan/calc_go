@@ -8,7 +8,7 @@ import (
 
 func Calc(expression string) (float64, error) {
 	expression = strings.ReplaceAll(expression, " ", "")
-	err := isValid(expression)
+	err := IsValid(expression)
 	if err != nil {
 		return 0, err
 	}
@@ -23,7 +23,7 @@ func Calc(expression string) (float64, error) {
 	return result, nil
 }
 
-func isValid(e string) error {
+func IsValid(e string) error {
 	res := []rune(strings.ReplaceAll(e, " ", ""))
 	//проверка на пустую строку
 	if len(res) == 0 {

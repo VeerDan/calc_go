@@ -8,7 +8,62 @@ import (
 	calculation "github.com/VeerDan/calc_go/pkg/calculation"
 	"log/slog"
 	"time"
+	"sync"
 )
+
+
+var Expressions []*Expression
+var Mu sync.Mutex
+var Id int = 0
+
+type Expression struct {
+	Id int
+	Status string
+	Result int
+}
+
+func AssignId() int {
+	Mu.Lock()
+	defer Mu.Unlock()
+	Id += 1
+	return Id
+}
+
+func CalculateHandler(w http.ResponseWriter, r *http.Request) {
+	request := new(Request)
+	defer r.Body.Close()
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		slog.Error(fmt.Sprintf("error: %v; status_code: %d", err, 500))
+		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		return
+	}
+	if calculation.IsValid(request.Expression) == nil {
+		Mu.Lock()
+		defer Mu.Unlock()
+		expression := new(Expression)
+		expression.Id = AssignId()
+		expression.Status = "Calculating"
+		expression.Result = 0
+		Expressions = append(Expressions, expression)
+		slog.Info(fmt.Sprintf("working on expression; id: %v", expression.Id))
+		fmt.Fprintf(w, `{"id":"%v"}`, expression.Id)
+	} else {
+		slog.Error(fmt.Sprintf("error: Unvalid expression; status_code: %d", 422))
+		http.Error(w, `{"error":"Unvalid expression"}`, http.StatusUnprocessableEntity)
+	}
+}
+
+
+func ExpressionHandler(w http.ResponseWriter, r *http.Request) {
+	res, err := json.Marshal(Expressions)
+	if err != nil {
+		slog.Error("error: Internal server error; status code: 500")
+		http.Error(w, `{"error":"Internal server error"}`, 500)
+	}
+	fmt.Fprint(w, string(res))
+}
+
 
 type Config struct {
 	Addr string
